@@ -44,8 +44,56 @@ namespace Leaderboard.Services
     {
         public IEnumerable<UserWithPlace> CalculatePlaces(IEnumerable<IUserWithScore> usersWithScores, LeaderboardMinScores leaderboardMinScores)
         {
-            // TODO: implement code here
-            throw new NotImplementedException();
+            var usersWithPlaces = new List<UserWithPlace>();
+
+            var usersWithScoresAboveFirstPlaceMinScore = from user in usersWithScores
+                where user.Score >= leaderboardMinScores.FirstPlaceMinScore
+                orderby user.Score descending
+                select user;
+
+            var nextPlace = AppendUsersWithPlaces(usersWithPlaces, usersWithScoresAboveFirstPlaceMinScore, 1);
+
+            var usersWithScoresAboveSecondPlaceMinScore = from user in usersWithScores
+                where user.Score >= leaderboardMinScores.SecondPlaceMinScore
+                && user.Score < leaderboardMinScores.FirstPlaceMinScore
+                orderby user.Score descending
+                select user;
+
+            nextPlace = AppendUsersWithPlaces(usersWithPlaces, 
+                usersWithScoresAboveSecondPlaceMinScore,
+                nextPlace > 2 ? nextPlace : 2);
+
+            var usersWithScoresAboveThirdPlaceMinScore = from user in usersWithScores
+                where user.Score >= leaderboardMinScores.ThirdPlaceMinScore
+                && user.Score < leaderboardMinScores.SecondPlaceMinScore
+                orderby user.Score descending
+                select user;
+
+            nextPlace = AppendUsersWithPlaces(usersWithPlaces, 
+                usersWithScoresAboveThirdPlaceMinScore,
+                nextPlace > 3 ? nextPlace : 3);
+
+            var usersWithScoresBelowThirdPlaceMinScore = from user in usersWithScores
+                where user.Score < leaderboardMinScores.ThirdPlaceMinScore
+                orderby user.Score descending
+                select user;
+
+            AppendUsersWithPlaces(usersWithPlaces, 
+                usersWithScoresBelowThirdPlaceMinScore,
+                nextPlace > 4 ? nextPlace : 4);
+
+            return usersWithPlaces;
+        }
+
+        private int AppendUsersWithPlaces(List<UserWithPlace> usersWithPlaces, IEnumerable<IUserWithScore> orderedUsers, int startingPlace)
+        {
+            foreach(var user in orderedUsers)
+            {
+                usersWithPlaces.Add(new UserWithPlace(user.UserId, startingPlace));
+                startingPlace++;
+            }
+
+            return startingPlace;
         }
     }
 }
